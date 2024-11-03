@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Metadata Extractor</title>
+</head>
+<body>
+    <h1>Extract Image Metadata</h1>
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="extractMetadata()">Extract Metadata</button>
+    <pre id="metadataOutput"></pre>
+
+    <script>
+        async function extractMetadata() {
+            const imageInput = document.getElementById('imageInput');
+            const metadataOutput = document.getElementById('metadataOutput');
+
+            if (!imageInput.files.length) {
+                alert("Please select an image file!");
+                return;
+            }
+
+            const file = imageInput.files[0];
+            const reader = new FileReader();
+
+            reader.onloadend = async () => {
+                const imageBase64 = reader.result.split(',')[1]; // Get base64 part after the comma
+
+                try {
+                    const response = await fetch('/.netlify/functions/extractMetadata', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ imageBase64 })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        metadataOutput.textContent = JSON.stringify(data.metadata, null, 2);
+                    } else {
+                        metadataOutput.textContent = "Error extracting metadata";
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    metadataOutput.textContent = "Error communicating with the server";
+                }
+            };
+
+            reader.readAsDataURL(file); // Convert image to base64
+        }
+    </script>
+</body>
+</html>
